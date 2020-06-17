@@ -308,15 +308,30 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
   /*--- Store the value of the Radius of the Actuator Disk ---*/
 
-  Alloc2D(nMarker, ActDisk_R);
+  ActDisk_R = new su2double [nMarker];
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      ActDisk_R[iMarker] = 0;
+    }
 
   /*--- Store the value of the Center of the Actuator Disk ---*/
 
-  Alloc2D(nMarker, nDim, ActDisk_C);
+  ActDisk_C = new su2double* [nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    ActDisk_C[iMarker] = new su2double [nDim];
+    for (iDim = 0; iDim < nDim; iDim++) {
+      ActDisk_C[iMarker][iDim] = 0;
+    }
+  }
 
   /*--- Store the value of the Axis of the Actuator Disk ---*/
 
-  Alloc2D(nMarker, nDim, ActDisk_Axis);
+  ActDisk_Axis = new su2double* [nMarker];
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      ActDisk_Axis[iMarker] = new su2double [nDim];
+      for (iDim = 0; iDim < nDim; iDim++) {
+        ActDisk_Axis[iMarker][iDim] = 0;
+      }
+    }
 
   /*--- Store the value of the Axial Force per Unit Area at the Actuator Disk ---*/
 
@@ -5809,10 +5824,11 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
   bool ActDisk_Info;
   su2double MyBCThrust, BCThrust_Init;
   su2double Vector[MAXNDIM] = {0.0};
-  int iRow, nRow;
+  int iRow, nRow, iEl, iVar;
   su2double rad_v[50]={0.0}, dCt_v[50]={0.0}, dCp_v[50]={0.0}, dCr_v[50]={0.0},
-  r_ = 0.0, r[MAXNDIM] = {0.0},
+  r_ = 0.0, r[MAXNDIM] = {0.0}, P[MAXNDIM],
   AD_Center[MAXNDIM] = {0.0}, AD_Axis[MAXNDIM] = {0.0}, AD_Radius = 0.0, AD_J = 0.0;
+  su2double Fa, Ft, Fr;
 
   su2double dNetThrust_dBCThrust        = config->GetdNetThrust_dBCThrust();
   unsigned short Kind_ActDisk           = config->GetKind_ActDisk();
@@ -5904,7 +5920,7 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
                        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
                        for (iDim=0;iDim<nDim;iDim++){
-                          P[iDim]=geometry->node[iPoint]->GetCoord(iDim);
+                          P[iDim]=geometry->nodes->GetCoord(iPoint)[iDim];
                           r[iDim]=P[iDim]-AD_Center[iDim];
                        }
                        r_=0.0;
@@ -10875,7 +10891,7 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
   su2double C[3], P[3], Prop_Axis[3], R, r[3], r_;
   su2double Fa, Fr, Ft, Fx, Fy, Fz;
   su2double u_in, v_in, w_in, u_out, v_out, w_out, uJ, vJ, wJ;
-  su2double Temp_in, Temp_out, H_in, H_out;
+  su2double Temp_in, Temp_out, Temperature_out, H_in, H_out;
   su2double FQ, Q_out, Density_Disk;
   su2double SoSextr, Vnextr[3], Vnextr_, RiemannExtr, QdMnorm[3], QdMnorm2, appo2, SoS_out;
 
@@ -10906,12 +10922,12 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
     for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
       iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-      GlobalIndex = geometry->node[iPoint]->GetGlobalIndex();
+      GlobalIndex = geometry->nodes->GetGlobalIndex(iPoint);
       GlobalIndex_donor = GetDonorGlobalIndex(val_marker, iVertex);
 
       /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
 
-      if ((geometry->node[iPoint]->GetDomain()) &&
+      if ((geometry->nodes->GetDomain(iPoint)) &&
          (GlobalIndex != GlobalIndex_donor)) {
 
         /*--- Normal vector for this vertex (negative for outward convention) ---*/
@@ -10928,13 +10944,13 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
 
         /*--- Current solution at this boundary node and jumps values ---*/
 
-        V_domain = node[iPoint]->GetPrimitive();
+        V_domain = nodes->GetPrimitive(iPoint);
         Fa = GetActDisk_Fa(val_marker, iVertex);
         Fr = GetActDisk_Fr(val_marker, iVertex);
         Ft = GetActDisk_Ft(val_marker, iVertex);
 
         for (iDim=0;iDim<nDim;iDim++){
-          P[iDim]=geometry->node[iPoint]->GetCoord(iDim);
+          P[iDim]=geometry->nodes->GetCoord(iPoint)[iDim];
           r[iDim]=P[iDim]-C[iDim];
         }
         r_=0.0;
@@ -10969,10 +10985,10 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
         }
 
         if (val_inlet_surface){
-          V_inlet = node[iPoint]->GetPrimitive();
+          V_inlet = nodes->GetPrimitive(iPoint);
           V_outlet = GetDonorPrimVar(val_marker, iVertex);}
         else{
-          V_outlet =  node[iPoint]->GetPrimitive();
+          V_outlet =  nodes->GetPrimitive(iPoint);
           V_inlet = GetDonorPrimVar(val_marker, iVertex);}
 
         Pressure_out    = V_outlet[nDim+1];
@@ -11092,22 +11108,22 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
             conv_numerics->SetPrimitive(V_domain, V_outlet);
            }
 
-           /*--- Grid Movement ---*/
+          /*--- Grid Movement ---*/
 
-           if (grid_movement)
-             conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+          if (dynamic_grid)
+            conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
-           /*--- Compute the residual using an upwind scheme ---*/
+          /*--- Compute the residual using an upwind scheme ---*/
 
-           conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+          auto residual = conv_numerics->ComputeResidual(config);
 
-           /*--- Update residual value ---*/
+          /*--- Update residual value ---*/
 
-           LinSysRes.AddBlock(iPoint, Residual);
+          LinSysRes.AddBlock(iPoint, residual);
 
-           /*--- Jacobian contribution for implicit integration ---*/
+          /*--- Jacobian contribution for implicit integration ---*/
 
-           if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+          if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
          }
     }

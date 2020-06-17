@@ -2068,7 +2068,7 @@ public:
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the actuator disk radius.
    */
-  inline su2double GetActDisk_R(unsigned short val_marker) final {
+  inline su2double GetActDisk_R(unsigned short val_marker) const final {
     return ActDisk_R[val_marker];
   }
 
