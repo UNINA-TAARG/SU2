@@ -622,7 +622,7 @@ public:
    * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
   void SetPrimitive_Gradient_GG(CGeometry *geometry,
-                                CConfig *config,
+                                const CConfig *config,
                                 bool reconstruction = false) final;
 
   /*!
@@ -633,7 +633,7 @@ public:
    * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
   void SetPrimitive_Gradient_LS(CGeometry *geometry,
-                                CConfig *config,
+                                const CConfig *config,
                                 bool reconstruction = false) final;
 
   /*!
@@ -641,7 +641,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) final;
+  void SetPrimitive_Limiter(CGeometry *geometry, const CConfig *config) final;
 
   /*!
    * \brief Compute the preconditioner for convergence acceleration by Roe-Turkel method.
