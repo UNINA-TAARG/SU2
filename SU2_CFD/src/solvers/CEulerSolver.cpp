@@ -303,6 +303,30 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
     DonorGlobalIndex[iMarker] = new unsigned long [nVertex[iMarker]]();
   }
 
+  /*--- Store the value of the Radius of the Actuator Disk ---*/
+
+  Alloc2D(nMarker, ActDisk_R);
+
+  /*--- Store the value of the Center of the Actuator Disk ---*/
+
+  Alloc2D(nMarker, nDim, ActDisk_C);
+
+  /*--- Store the value of the Axis of the Actuator Disk ---*/
+
+  Alloc2D(nMarker, nDim, ActDisk_Axis);
+
+  /*--- Store the value of the Axial Force per Unit Area at the Actuator Disk ---*/
+
+  Alloc2D(nMarker, nVertex, ActDisk_Fa);
+
+  /*--- Store the value of the Radial Force per Unit Area at the Actuator Disk ---*/
+
+  Alloc2D(nMarker, nVertex, ActDisk_Fr);
+
+  /*--- Store the value of the Tangential Force per Unit Area at the Actuator Disk ---*/
+
+  Alloc2D(nMarker, nVertex, ActDisk_Ft);
+
   /*--- Store the value of the Delta P at the Actuator Disk ---*/
 
   Alloc2D(nMarker, nVertex, ActDisk_DeltaP);
@@ -614,6 +638,46 @@ CEulerSolver::~CEulerSolver(void) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
       delete [] DonorGlobalIndex[iMarker];
     delete [] DonorGlobalIndex;
+  }
+
+  if (ActDisk_R != nullptr) {
+    delete [] ActDisk_R;
+  }
+
+  if (ActDisk_C != nullptr) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      if (ActDisk_C[iMarker] != NULL) {
+        delete [] ActDisk_C[iMarker];
+      }
+    }
+    delete [] ActDisk_C;
+  }
+
+  if (ActDisk_Axis != nullptr) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      if (ActDisk_Axis[iMarker] != NULL) {
+        delete [] ActDisk_Axis[iMarker];
+      }
+    }
+    delete [] ActDisk_Axis;
+  }
+
+  if (ActDisk_Fa != nullptr) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      delete [] ActDisk_Fa[iMarker];
+    delete [] ActDisk_Fa;
+  }
+
+  if (ActDisk_Fr != nullptr) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      delete [] ActDisk_Fr[iMarker];
+    delete [] ActDisk_Fr;
+  }
+
+  if (ActDisk_Ft != nullptr) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      delete [] ActDisk_Ft[iMarker];
+    delete [] ActDisk_Ft;
   }
 
   if (ActDisk_DeltaP != nullptr) {
@@ -5762,6 +5826,10 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
   bool ActDisk_Info;
   su2double MyBCThrust, BCThrust_Init;
   su2double Vector[MAXNDIM] = {0.0};
+  int iRow, nRow;
+  su2double rad_v[50]={0.0}, dCt_v[50]={0.0}, dCp_v[50]={0.0}, dCr_v[50]={0.0},
+  r_ = 0.0, r[MAXNDIM] = {0.0},
+  AD_Center[MAXNDIM] = {0.0}, AD_Axis[MAXNDIM] = {0.0}, AD_Radius = 0.0, AD_J = 0.0;
 
   su2double dNetThrust_dBCThrust        = config->GetdNetThrust_dBCThrust();
   unsigned short Kind_ActDisk           = config->GetKind_ActDisk();
@@ -5781,6 +5849,112 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
   Factor = (0.5*RefDensity*RefArea*RefVel2);
   Ref = config->GetDensity_Ref() * config->GetVelocity_Ref() * config->GetVelocity_Ref() * 1.0 * 1.0;
 
+  /*--- Variable load distribution is in input ---*/
+
+  if (Kind_ActDisk == VARIABLE_LOAD) {
+     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+        if ((config->GetMarker_All_KindBC(iMarker) == ACTDISK_INLET) ||
+           (config->GetMarker_All_KindBC(iMarker) == ACTDISK_OUTLET)) {
+
+           Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+           string ActDisk_filename = config->GetActDisk_FileName();
+           ifstream ActDisk_file;
+           ActDisk_file.open(ActDisk_filename.data(), ios::in);
+
+           if (!ActDisk_file.fail()) {
+              string text_line, text_line_appo, name[2];
+              string::size_type position;
+
+              while (getline (ActDisk_file, text_line)) {
+                 position = text_line.find ("NAME=");
+                 if(position==string::npos){continue;}
+                 text_line.erase (0,5);
+                 istringstream NameID(text_line);
+                 for (int i=0;i<2;i++){
+                    NameID >> name[i];
+                 }
+
+                 if (Marker_Tag==name[0] || Marker_Tag==name[1]){
+                    getline (ActDisk_file, text_line_appo);
+                    text_line_appo.erase (0,7);
+                    istringstream C_value(text_line_appo);
+                    for (iDim=0;iDim<nDim;iDim++){
+                       C_value >> AD_Center[iDim];
+                    }
+
+                    getline (ActDisk_file, text_line_appo);
+                    text_line_appo.erase (0,5);
+                    istringstream axis_value(text_line_appo);
+                    for (iDim=0;iDim<nDim;iDim++){
+                       axis_value >> AD_Axis[iDim];
+                    }
+
+                    getline (ActDisk_file, text_line_appo);
+                    text_line_appo.erase (0,7);
+                    istringstream R_value(text_line_appo);
+                    R_value >> AD_Radius;
+
+                    getline (ActDisk_file, text_line_appo);
+                    text_line_appo.erase (0,10);
+                    istringstream J_value(text_line_appo);
+                    J_value >> AD_J;
+
+                    getline (ActDisk_file, text_line_appo);
+                    text_line_appo.erase (0,5);
+                    istringstream row_value(text_line_appo);
+                    row_value >> nRow;
+
+                    getline (ActDisk_file, text_line_appo);
+                    for (iRow=0; iRow<nRow; iRow++){
+                       getline (ActDisk_file, text_line_appo);
+                       istringstream row_val_value(text_line_appo);
+                       row_val_value >> rad_v[iVar] >> dCt_v[iVar] >> dCp_v[iVar] >> dCr_v[iVar];
+                    }
+
+                    SetActDisk_R(iMarker, AD_Radius);
+                    for (iDim=0;iDim<nDim;iDim++){
+                       SetActDisk_C(iMarker, iDim, AD_Center[iDim]);
+                       SetActDisk_Axis(iMarker, iDim, AD_Axis[iDim]);
+                    }
+
+                    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+                       iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+                       for (iDim=0;iDim<nDim;iDim++){
+                          P[iDim]=geometry->node[iPoint]->GetCoord(iDim);
+                          r[iDim]=P[iDim]-AD_Center[iDim];
+                       }
+                       r_=0.0;
+                       for (iDim=0;iDim<nDim;iDim++){
+                          r_ += r[iDim]*r[iDim];
+                       }
+                       r_=sqrt(r_);
+                       r_ = r_/AD_Radius;
+
+                       for (iEl=0;iEl<nRow;iEl++){
+                          if (r_<=rad_v[iEl]){
+                             Fa = (dCt_v[iEl]*(2*RefDensity*RefVel2)/(AD_J*AD_J*PI_NUMBER*rad_v[iEl])) / config->GetPressure_Ref();
+                             Ft = (dCp_v[iEl]*(2*RefDensity*RefVel2)/((AD_J*PI_NUMBER*rad_v[iEl])*(AD_J*PI_NUMBER*rad_v[iEl]))) / config->GetPressure_Ref();
+                             Fr = (dCr_v[iEl]*(2*RefDensity*RefVel2)/(AD_J*AD_J*PI_NUMBER*rad_v[iEl])) / config->GetPressure_Ref();
+
+                             SetActDisk_Fa(iMarker, iVertex, Fa);
+                             SetActDisk_Fr(iMarker, iVertex, Fr);
+                             SetActDisk_Ft(iMarker, iVertex, Ft);
+
+                             break;
+                          }
+                       }
+                    }
+                 }
+              }
+              ActDisk_file.close();
+           }
+           else{
+              SU2_MPI::Error("Unable to open Actuator Disk Input File", CURRENT_FUNCTION);
+           }
+        }
+     }
+  }
   /*--- Delta P and delta T are inputs ---*/
 
   if (Kind_ActDisk == VARIABLES_JUMP) {
@@ -10715,6 +10889,13 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
   su2double Vel_normal_inlet_, Vel_tangent_inlet_, Vel_inlet_;
   su2double Vel_normal_outlet_, Vel_outlet_;
 
+  su2double C[3], P[3], Prop_Axis[3], R, r[3], r_;
+  su2double Fa, Fr, Ft, Fx, Fy, Fz;
+  su2double u_in, v_in, w_in, u_out, v_out, w_out, uJ, vJ, wJ;
+  su2double Temp_in, Temp_out, H_in, H_out;
+  su2double FQ, Q_out, Density_Disk;
+  su2double SoSextr, Vnextr[3], Vnextr_, RiemannExtr, QdMnorm[3], QdMnorm2, appo2, SoS_out;
+
   su2double Pressure_out, Density_out, SoundSpeed_out, Velocity2_out,
   Mach_out, Pressure_in, Density_in, SoundSpeed_in, Velocity2_in,
   Mach_in, PressureAdj, TemperatureAdj;
@@ -10724,10 +10905,230 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
   bool tkeNeeded          = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
   bool ratio              = (config->GetActDisk_Jump() == RATIO);
   su2double SecondaryFlow = config->GetSecondaryFlow_ActDisk();
+  unsigned short Kind_ActDisk           = config->GetKind_ActDisk();
 
   su2double *Normal = new su2double[nDim];
   su2double *Flow_Dir = new su2double[nDim];
 
+  if(Kind_ActDisk == VARIABLE_LOAD){
+    for (iDim=0;iDim<nDim;iDim++){
+      C[iDim] = GetActDisk_C(val_marker, iDim);
+      Prop_Axis[iDim] = GetActDisk_Axis(val_marker, iDim);
+    }
+
+    R = GetActDisk_R(val_marker);
+
+    /*--- Loop over all the vertices on this boundary marker ---*/
+    SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
+    for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+
+      iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+      GlobalIndex = geometry->node[iPoint]->GetGlobalIndex();
+      GlobalIndex_donor = GetDonorGlobalIndex(val_marker, iVertex);
+
+      /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
+
+      if ((geometry->node[iPoint]->GetDomain()) &&
+         (GlobalIndex != GlobalIndex_donor)) {
+
+        /*--- Normal vector for this vertex (negative for outward convention) ---*/
+
+        geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+        for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+        conv_numerics->SetNormal(Normal);
+
+        Area = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+        Area = sqrt (Area);
+
+        for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim]/Area;
+
+        /*--- Current solution at this boundary node and jumps values ---*/
+
+        V_domain = node[iPoint]->GetPrimitive();
+        Fa = GetActDisk_Fa(val_marker, iVertex);
+        Fr = GetActDisk_Fr(val_marker, iVertex);
+        Ft = GetActDisk_Ft(val_marker, iVertex);
+
+        for (iDim=0;iDim<nDim;iDim++){
+          P[iDim]=geometry->node[iPoint]->GetCoord(iDim);
+          r[iDim]=P[iDim]-C[iDim];
+        }
+        r_=0.0;
+        for (iDim = 0; iDim < nDim; iDim ++) r_ += r[iDim]*r[iDim];
+        r_=sqrt(r_);
+
+        if ((r[1]>0.0) && (r[2]>0.0) || (r[1]>0.0) && (r[2]<0.0) || (r[1]<0.0) && (r[2]<0.0) || (r[1]<0.0) && (r[2]>0.0)){
+          Fx = (Ft+Fr)*(r[0]/r_);
+          Fy = (Ft+Fr)*(r[2]/r_);
+          Fz = -(Ft+Fr)*(r[1]/r_);
+        }
+
+        if ((r[1]>0) && (r[2]=0)){
+          Fx = (Ft+Fr)*(r[0]/r_);
+          Fy = 0.0;
+          Fz = -(Ft+Fr)*(r[1]/r_);
+        }
+        if ((r[1]=0) && (r[2]<0)){
+          Fx = (Ft+Fr)*(r[0]/r_);
+          Fy = (Ft+Fr)*(r[2]/r_);
+          Fz = 0.0;
+        }
+        if ((r[1]<0) && (r[2]=0)){
+          Fx = (Ft+Fr)*(r[0]/r_);
+          Fy = 0.0;
+          Fz = -(Ft+Fr)*(r[1]/r_);
+        }
+        if ((r[1]=0) && (r[2]>0)){
+          Fx = (Ft+Fr)*(r[0]/r_);
+          Fy = (Ft+Fr)*(r[2]/r_);
+          Fz = 0.0;
+        }
+
+        if (val_inlet_surface){
+          V_inlet = node[iPoint]->GetPrimitive();
+          V_outlet = GetDonorPrimVar(val_marker, iVertex);}
+        else{
+          V_outlet =  node[iPoint]->GetPrimitive();
+          V_inlet = GetDonorPrimVar(val_marker, iVertex);}
+
+        Pressure_out    = V_outlet[nDim+1];
+        Density_out     = V_outlet[nDim+2];
+        u_out = V_outlet[1]*V_outlet[nDim+2];
+        v_out = V_outlet[2]*V_outlet[nDim+2];
+        w_out = V_outlet[3]*V_outlet[nDim+2];
+        Temp_out = V_outlet[0];
+
+        Pressure_in    = V_inlet[nDim+1];
+        Density_in     = V_inlet[nDim+2];
+        u_in = V_inlet[1]*Density_in;
+        v_in = V_inlet[2]*Density_in;
+        w_in = V_inlet[3]*Density_in;
+        H_in = V_inlet[nDim+3]*Density_in;
+        Temp_in = V_inlet[0];
+
+        Density_Disk = 0.5*(Density_in + Density_out);
+
+        Q_out = 0.5*((u_in + u_out)*Prop_Axis[0] + (v_in + v_out)*Prop_Axis[1] + (w_in + w_out)*Prop_Axis[2]);
+
+        FQ = Q_out/Density_Disk;
+
+        if (FQ<1e-15){
+          uJ = 0.0;
+          vJ = 0.0;
+          wJ = 0.0;}
+        else{
+          uJ = Fx/FQ;
+          vJ = Fy/FQ;
+          wJ = Fz/FQ;}
+
+        if (val_inlet_surface) {
+          /*--- Build the fictitious intlet state based on characteristics.
+                Retrieve the specified back pressure for this inlet ---*/
+
+          Density = V_domain[nDim+2];
+          Velocity2 = 0.0; Vn = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Velocity[iDim] = V_domain[iDim+1];
+            Velocity2 += Velocity[iDim]*Velocity[iDim];
+            Vn += Velocity[iDim]*UnitNormal[iDim];
+          }
+          Pressure   = V_domain[nDim+1];
+          SoundSpeed = sqrt(Gamma*Pressure/Density);
+
+          Entropy = Pressure*pow(1.0/Density, Gamma);
+          Riemann = Vn + 2.0*SoundSpeed/Gamma_Minus_One;
+
+          /*--- Compute the new fictious state at the outlet ---*/
+
+          Pressure   = Pressure_out - Fa;
+          Density    = pow(Pressure/Entropy,1.0/Gamma);
+          SoundSpeed = sqrt(Gamma*Pressure/Density);
+          Vn_Inlet    = Riemann - 2.0*SoundSpeed/Gamma_Minus_One;
+
+          Velocity2  = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Velocity[iDim] = Velocity[iDim] + (Vn_Inlet-Vn)*UnitNormal[iDim];
+            Velocity2 += Velocity[iDim]*Velocity[iDim];
+          }
+          Energy = Pressure/(Density*Gamma_Minus_One) + 0.5*Velocity2;
+          if (tkeNeeded) Energy += GetTke_Inf();
+
+          /*--- Conservative variables, using the derived quantities ---*/
+
+          V_inlet[0] = Pressure / ( Gas_Constant * Density);
+          for (iDim = 0; iDim < nDim; iDim++)
+            V_inlet[iDim+1] = Velocity[iDim];
+            V_inlet[nDim+1] = Pressure;
+            V_inlet[nDim+2] = Density;
+            V_inlet[nDim+3] = Energy + Pressure/Density;
+            V_inlet[nDim+4] = SoundSpeed;
+            conv_numerics->SetPrimitive(V_domain, V_inlet);
+          }else{
+            SoSextr = V_domain[nDim+4];
+
+            Vnextr_ = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++){
+              Vnextr[iDim] = V_domain[iDim+1]*Prop_Axis[iDim];
+              Vnextr_ += Vnextr[iDim]*Vnextr[iDim];
+            }
+            Vnextr_ = sqrt(max(0.0,Vnextr_));
+            RiemannExtr = Vnextr_ - ((2*SoSextr)/(Gamma_Minus_One));
+
+            Velocity[0] = u_in + uJ;
+            Velocity[1] = v_in + vJ;
+            Velocity[2] = w_in + wJ;
+            Pressure_out = Pressure_in + Fa;
+
+            QdMnorm[0] = u_in*Prop_Axis[0];
+            QdMnorm[1] = v_in*Prop_Axis[1];
+            QdMnorm[2] = w_in*Prop_Axis[2];
+
+            QdMnorm2 = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++) QdMnorm2 += QdMnorm[iDim]*QdMnorm[iDim];
+
+            appo2 = -((2*sqrt(max(0.0,QdMnorm2))*RiemannExtr)+((4*Gamma*Pressure_out)/(Gamma_Minus_One*Gamma_Minus_One)));
+            Density_out = (-appo2+sqrt(max(0.0,appo2*appo2-4*QdMnorm2*RiemannExtr*RiemannExtr)))/(2*RiemannExtr*RiemannExtr);
+
+            Velocity2 = 0;
+            for (iDim = 0; iDim < nDim; iDim++) Velocity2 += (Velocity[iDim]*Velocity[iDim]);
+
+            H_out = H_in/Density_in + Fa/Density_out;
+            Energy = H_out - Pressure_out/Density_out;
+            Temperature_out = (Energy-0.5*Velocity2/(Density_out*Density_out))*(Gamma_Minus_One/Gas_Constant);
+
+            SoS_out = sqrt(Gamma*Gas_Constant*Temperature_out);
+
+            V_outlet[0] = Temperature_out;
+            for (iDim = 0; iDim < nDim; iDim++)
+              V_outlet[iDim+1] = Velocity[iDim]/Density_out;
+            V_outlet[nDim+1] = Pressure_out;
+            V_outlet[nDim+2] = Density_out;
+            V_outlet[nDim+3] = H_out;
+            V_outlet[nDim+4] = SoS_out;
+            conv_numerics->SetPrimitive(V_domain, V_outlet);
+           }
+
+           /*--- Grid Movement ---*/
+
+           if (grid_movement)
+             conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+
+           /*--- Compute the residual using an upwind scheme ---*/
+
+           conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+
+           /*--- Update residual value ---*/
+
+           LinSysRes.AddBlock(iPoint, Residual);
+
+           /*--- Jacobian contribution for implicit integration ---*/
+
+           if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+
+         }
+    }
+  }else{
   /*--- Loop over all the vertices on this boundary marker ---*/
 
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
@@ -11106,7 +11507,7 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
     }
 
   }
-
+}
   /*--- Free locally allocated memory ---*/
 
   delete [] Normal;
