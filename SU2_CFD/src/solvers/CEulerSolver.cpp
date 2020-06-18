@@ -5848,8 +5848,12 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
   Factor = (0.5*RefDensity*RefArea*RefVel2);
   Ref = config->GetDensity_Ref() * config->GetVelocity_Ref() * config->GetVelocity_Ref() * 1.0 * 1.0;
 
-  su2double Vel_FreeStream = config->GetVelocity_FreeStream();
   su2double Dens_FreeStream = config->GetDensity_FreeStream();
+  su2double Gas_Constant  = config->GetGas_ConstantND();
+
+  su2double M_inf = config->GetMach();
+  su2double T_inf = config->GetTemperature_FreeStream();
+  su2double Vel_FreeStream = M_inf*sqrt(Gamma*Gas_Constant*T_inf);
 
   /*--- Variable load distribution is in input ---*/
 
