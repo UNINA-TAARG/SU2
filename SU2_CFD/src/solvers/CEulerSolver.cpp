@@ -10957,7 +10957,25 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
         for (iDim = 0; iDim < nDim; iDim ++) r_ += r[iDim]*r[iDim];
         r_=sqrt(r_);
 
-        if (((r[1]>0.0) && (r[2]>0.0)) || ((r[1]>0.0) && (r[2]<0.0)) || ((r[1]<0.0) && (r[2]<0.0)) || ((r[1]<0.0) && (r[2]>0.0))){
+        if ((r[1]>0.0) && (r[2]>0.0)){
+          Fx = (Ft+Fr)*(r[0]/r_);
+          Fy = (Ft+Fr)*(r[2]/r_);
+          Fz = -(Ft+Fr)*(r[1]/r_);
+        }
+
+        if ((r[1]>0.0) && (r[2]<0.0)){
+          Fx = (Ft+Fr)*(r[0]/r_);
+          Fy = (Ft+Fr)*(r[2]/r_);
+          Fz = -(Ft+Fr)*(r[1]/r_);
+        }
+
+        if ((r[1]<0.0) && (r[2]<0.0)){
+          Fx = (Ft+Fr)*(r[0]/r_);
+          Fy = (Ft+Fr)*(r[2]/r_);
+          Fz = -(Ft+Fr)*(r[1]/r_);
+        }
+
+        if ((r[1]<0.0) && (r[2]>0.0)){
           Fx = (Ft+Fr)*(r[0]/r_);
           Fy = (Ft+Fr)*(r[2]/r_);
           Fz = -(Ft+Fr)*(r[1]/r_);
