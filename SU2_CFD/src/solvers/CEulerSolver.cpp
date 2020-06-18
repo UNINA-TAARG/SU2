@@ -5826,9 +5826,10 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
   su2double Vector[MAXNDIM] = {0.0};
   int iRow, nRow, iEl, iVar;
   su2double rad_v[50]={0.0}, dCt_v[50]={0.0}, dCp_v[50]={0.0}, dCr_v[50]={0.0},
-  r_ = 0.0, r[MAXNDIM] = {0.0}, P[MAXNDIM],
+  r_ = 0.0, r[MAXNDIM] = {0.0},
   AD_Center[MAXNDIM] = {0.0}, AD_Axis[MAXNDIM] = {0.0}, AD_Radius = 0.0, AD_J = 0.0;
   su2double Fa, Ft, Fr;
+  const su2double *P = nullptr;
 
   su2double dNetThrust_dBCThrust        = config->GetdNetThrust_dBCThrust();
   unsigned short Kind_ActDisk           = config->GetKind_ActDisk();
@@ -5925,9 +5926,9 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
 
                     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
                        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+                       P = geometry->nodes->GetCoord(iPoint);
 
                        for (iDim=0;iDim<nDim;iDim++){
-                          P[iDim]=geometry->nodes->GetCoord(iPoint)[iDim];
                           r[iDim]=P[iDim]-AD_Center[iDim];
                        }
                        r_=0.0;
@@ -10895,12 +10896,13 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
   su2double Vel_normal_inlet_, Vel_tangent_inlet_, Vel_inlet_;
   su2double Vel_normal_outlet_, Vel_outlet_;
 
-  su2double C[3], P[3], Prop_Axis[3], R, r[3], r_;
+  su2double C[3], Prop_Axis[3], R, r[3], r_;
   su2double Fa, Fr, Ft, Fx, Fy, Fz;
   su2double u_in, v_in, w_in, u_out, v_out, w_out, uJ, vJ, wJ;
   su2double Temp_in, Temp_out, Temperature_out, H_in, H_out;
   su2double FQ, Q_out, Density_Disk;
   su2double SoSextr, Vnextr[3], Vnextr_, RiemannExtr, QdMnorm[3], QdMnorm2, appo2, SoS_out;
+  const su2double *P = nullptr;
 
   su2double Pressure_out, Density_out, SoundSpeed_out, Velocity2_out,
   Mach_out, Pressure_in, Density_in, SoundSpeed_in, Velocity2_in,
@@ -10956,9 +10958,9 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
         Fr = GetActDisk_Fr(val_marker, iVertex);
         Ft = GetActDisk_Ft(val_marker, iVertex);
 
+        P = geometry->nodes->GetCoord(iPoint);
         for (iDim=0;iDim<nDim;iDim++){
-          P[iDim]=geometry->nodes->GetCoord(iPoint)[iDim];
-          r[iDim]=P[iDim]-C[iDim];
+          r[iDim] = P[iDim]-C[iDim];
         }
         r_=0.0;
         for (iDim = 0; iDim < nDim; iDim ++) r_ += r[iDim]*r[iDim];
