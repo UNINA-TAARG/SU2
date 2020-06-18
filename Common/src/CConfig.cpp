@@ -3274,7 +3274,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   if ((Kind_ActDisk == NET_THRUST) || (Kind_ActDisk == BC_THRUST)
       || (Kind_ActDisk == DRAG_MINUS_THRUST) || (Kind_ActDisk == MASSFLOW)
-      || (Kind_ActDisk == POWER) || (Kind_ActDisk == VARIABLE_LOAD))
+      || (Kind_ActDisk == POWER))
     ActDisk_Jump = RATIO;
 
   /*--- Error-catching and automatic array adjustments for objective, marker, and weights arrays --- */
