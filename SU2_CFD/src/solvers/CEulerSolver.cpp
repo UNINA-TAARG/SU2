@@ -10957,7 +10957,7 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
         for (iDim = 0; iDim < nDim; iDim ++) r_ += r[iDim]*r[iDim];
         r_=sqrt(r_);
 
-        if ((r[1]>0.0) && (r[2]>0.0) || (r[1]>0.0) && (r[2]<0.0) || (r[1]<0.0) && (r[2]<0.0) || (r[1]<0.0) && (r[2]>0.0)){
+        if (((r[1]>0.0) && (r[2]>0.0)) || ((r[1]>0.0) && (r[2]<0.0)) || ((r[1]<0.0) && (r[2]<0.0)) || ((r[1]<0.0) && (r[2]>0.0))){
           Fx = (Ft+Fr)*(r[0]/r_);
           Fy = (Ft+Fr)*(r[2]/r_);
           Fz = -(Ft+Fr)*(r[1]/r_);
@@ -11094,6 +11094,7 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
 
             H_out = H_in/Density_in + Fa/Density_out;
             Energy = H_out - Pressure_out/Density_out;
+            if (tkeNeeded) Energy += GetTke_Inf();
             Temperature_out = (Energy-0.5*Velocity2/(Density_out*Density_out))*(Gamma_Minus_One/Gas_Constant);
 
             SoS_out = sqrt(Gamma*Gas_Constant*Temperature_out);
