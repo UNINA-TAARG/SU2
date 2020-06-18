@@ -5848,6 +5848,9 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
   Factor = (0.5*RefDensity*RefArea*RefVel2);
   Ref = config->GetDensity_Ref() * config->GetVelocity_Ref() * config->GetVelocity_Ref() * 1.0 * 1.0;
 
+  su2double Vel_FreeStream = config->GetVelocity_FreeStream();
+  su2double Dens_FreeStream = config->GetDensity_FreeStream();
+
   /*--- Variable load distribution is in input ---*/
 
   if (Kind_ActDisk == VARIABLE_LOAD) {
@@ -5932,9 +5935,9 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
 
                        for (iEl=0;iEl<nRow;iEl++){
                           if (r_<=rad_v[iEl]){
-                             Fa = (dCt_v[iEl]*(2*RefDensity*RefVel2)/(AD_J*AD_J*PI_NUMBER*rad_v[iEl])) / config->GetPressure_Ref();
-                             Ft = (dCp_v[iEl]*(2*RefDensity*RefVel2)/((AD_J*PI_NUMBER*rad_v[iEl])*(AD_J*PI_NUMBER*rad_v[iEl]))) / config->GetPressure_Ref();
-                             Fr = (dCr_v[iEl]*(2*RefDensity*RefVel2)/(AD_J*AD_J*PI_NUMBER*rad_v[iEl])) / config->GetPressure_Ref();
+                             Fa = (dCt_v[iEl]*(2*Dens_FreeStream*Vel_FreeStream*Vel_FreeStream)/(AD_J*AD_J*PI_NUMBER*rad_v[iEl])) / config->GetPressure_Ref();
+                             Ft = (dCp_v[iEl]*(2*Dens_FreeStream*Vel_FreeStream*Vel_FreeStream)/((AD_J*PI_NUMBER*rad_v[iEl])*(AD_J*PI_NUMBER*rad_v[iEl]))) / config->GetPressure_Ref();
+                             Fr = (dCr_v[iEl]*(2*Dens_FreeStream*Vel_FreeStream*Vel_FreeStream)/(AD_J*AD_J*PI_NUMBER*rad_v[iEl])) / config->GetPressure_Ref();
 
                              SetActDisk_Fa(iMarker, iVertex, Fa);
                              SetActDisk_Fr(iMarker, iVertex, Fr);
