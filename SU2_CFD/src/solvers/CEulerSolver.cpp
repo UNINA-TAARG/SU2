@@ -5915,7 +5915,7 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
                     for (iRow=0; iRow<nRow; iRow++){
                        getline (ActDisk_file, text_line_appo);
                        istringstream row_val_value(text_line_appo);
-                       row_val_value >> rad_v[iVar] >> dCt_v[iVar] >> dCp_v[iVar] >> dCr_v[iVar];
+                       row_val_value >> rad_v[iRow] >> dCt_v[iRow] >> dCp_v[iRow] >> dCr_v[iRow];
                     }
 
                     SetActDisk_R(iMarker, AD_Radius);
