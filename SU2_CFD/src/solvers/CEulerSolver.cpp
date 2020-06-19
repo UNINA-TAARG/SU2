@@ -10918,6 +10918,7 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
   su2double *Normal = new su2double[nDim];
   su2double *Flow_Dir = new su2double[nDim];
 
+  SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
   if(Kind_ActDisk == VARIABLE_LOAD){
     for (iDim=0;iDim<nDim;iDim++){
       C[iDim] = GetActDisk_C(val_marker, iDim);
@@ -10927,7 +10928,7 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
     R = GetActDisk_R(val_marker);
 
     /*--- Loop over all the vertices on this boundary marker ---*/
-    SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
+
     for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
       iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -11158,7 +11159,6 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
   }else{
   /*--- Loop over all the vertices on this boundary marker ---*/
 
-  SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
