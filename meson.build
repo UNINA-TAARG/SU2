@@ -34,12 +34,12 @@ if get_option('custom-mpi')
   mpi = true
 # Otherwise they are automatically determined
 else
-#  mpi_dep = [dependency('mpi', language:'c', required : get_option('with-mpi')),
-#             dependency('mpi', language:'cpp', required : get_option('with-mpi'))]
-#  if mpi_dep[0].found() or mpi_dep[1].found()
-#    mpi = true
-#  endif
-mpi_dep = [dependency('mpich', required : get_option('with-mpi'))]
+  mpi_dep = [dependency('mpi', language:'c', required : get_option('with-mpi')),
+             dependency('mpi', language:'cpp', required : get_option('with-mpi'))]
+  if mpi_dep[0].found() or mpi_dep[1].found()
+    mpi = true
+  endif
+# mpi_dep = [dependency('mpich', required : get_option('with-mpi'))]
 endif
 
 # OpenMP
