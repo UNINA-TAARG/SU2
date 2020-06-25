@@ -33,11 +33,11 @@
 #include <string>
 #include <cstring>
 #include <fstream>
-<<<<<<< HEAD
+//<<<<<<< HEAD
 #include <time.h>
 class CSolver;
-=======
->>>>>>> da12538b72a0f6e8c7dd06bc95c59deac1af0361
+//=======
+//>>>>>>> da12538b72a0f6e8c7dd06bc95c59deac1af0361
 
 #include "../../output/filewriter/CParallelDataSorter.hpp"
 
