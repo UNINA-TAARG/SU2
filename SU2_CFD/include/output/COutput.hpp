@@ -478,6 +478,7 @@ public:
    */
   void WriteToFile(CConfig *config, CGeometry *geomery, unsigned short format, string fileName = "");
 
+
 protected:
 
   /*----------------------------- Protected member functions ----------------------------*/

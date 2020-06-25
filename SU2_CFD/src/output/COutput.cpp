@@ -41,6 +41,7 @@
 #include "../../include/output/filewriter/CSU2FileWriter.hpp"
 #include "../../include/output/filewriter/CSU2BinaryFileWriter.hpp"
 #include "../../include/output/filewriter/CSU2MeshFileWriter.hpp"
+#include "../../include/output/filewriter/CCGNSBFFileWriter.hpp"
 
 
 #include "../../../Common/include/geometry/CGeometry.hpp"
@@ -591,6 +592,28 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
 
       break;
 
+    case CGNS_BF:
+      if(config->GetMesh_FileFormat() == CGNS_GRID)	{
+        if (fileName.empty())
+          fileName = config->GetFilename(volumeFilename, "", curTimeIter);
+
+        /*--- Load and sort the output data and connectivity. ---*/
+
+        volumeDataSorter->SortConnectivity(config, geometry, true);
+
+        /*--- Write a CGNS file ---*/
+        if (rank == MASTER_NODE) (*fileWritingTable) << "CGNS BF" << fileName + CCGNSBFFileWriter::fileExt;
+
+        fileWriter = new CCGNSBFFileWriter(fileName, volumeDataSorter);
+
+//        fileWriter = new CCGNSBFFileWriter(config[iZone], geometry[iZone][iInst], &solver[iZone][iInst], iZone, val_nZone);
+        break;
+      }
+      else {
+        cout << "CGNS outuput not supported with SU2 mesh file format." << endl;
+        break;
+      }
+
     case SURFACE_PARAVIEW:
 
       if (fileName.empty())
@@ -715,8 +738,11 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
   if (fileWriter != nullptr){
 
     /*--- Write data to file ---*/
-
-    fileWriter->Write_Data();
+    if(format == CGNS_BF){
+      fileWriter->Write_Data_BF(config, geometry);
+    }else{
+      fileWriter->Write_Data();
+    }
 
     su2double BandWidth = fileWriter->Get_Bandwidth();
 

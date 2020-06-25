@@ -1616,7 +1616,8 @@ enum ENUM_OUTPUT {
   STL_BINARY              = 16, /*!< \brief STL binary format for surface solution output. Not implemented yet. */
   PARAVIEW_XML            = 17, /*!< \brief Paraview XML with binary data format */
   SURFACE_PARAVIEW_XML    = 18, /*!< \brief Surface Paraview XML with binary data format */
-  PARAVIEW_MULTIBLOCK     = 19  /*!< \brief Paraview XML Multiblock */
+  PARAVIEW_MULTIBLOCK     = 19, /*!< \brief Paraview XML Multiblock */
+  CGNS_BF                 = 20  /*!< \brief CGNS for breakforce format. */
 };
 static const MapType<string, ENUM_OUTPUT> Output_Map = {
   MakePair("TECPLOT_ASCII", TECPLOT)
@@ -1637,6 +1638,7 @@ static const MapType<string, ENUM_OUTPUT> Output_Map = {
   MakePair("CGNS", CGNS)
   MakePair("STL", STL)
   MakePair("STL_BINARY", STL_BINARY)
+  MakePair("CGNS_BF", CGNS_BF)
 };
 
 /*!
@@ -1644,11 +1646,13 @@ static const MapType<string, ENUM_OUTPUT> Output_Map = {
  */
 enum ENUM_TAB_OUTPUT {
   TAB_CSV = 1,            /*!< \brief Comma-separated values format for the solution output. */
-  TAB_TECPLOT = 2         /*!< \brief Tecplot format for the solution output. */
+  TAB_TECPLOT = 2,        /*!< \brief Tecplot format for the solution output. */
+  TAB_CGNS_BF = 3         /*!< \brief CGNS for brakforce format for the solution output. */
 };
 static const MapType<string, ENUM_TAB_OUTPUT> TabOutput_Map = {
   MakePair("CSV", TAB_CSV)
   MakePair("TECPLOT", TAB_TECPLOT)
+  MakePair("CGNS_BF", TAB_CGNS_BF)
 };
 
 /*!

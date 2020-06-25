@@ -34,6 +34,7 @@
 #include <cstring>
 #include <fstream>
 #include <time.h>
+class CSolver;
 
 #include "../../output/filewriter/CParallelDataSorter.hpp"
 
@@ -127,6 +128,8 @@ public:
    * \brief Write sorted data to file
    */
   virtual void Write_Data(){}
+
+  virtual void Write_Data_BF(CConfig *config, CGeometry *geometry){}
 
   /*!
    * \brief Get the bandwith used for the last writing

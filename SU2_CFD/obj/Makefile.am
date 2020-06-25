@@ -101,6 +101,7 @@ libSU2Core_sources = ../src/definition_structure.cpp \
   ../src/output/filewriter/CParaviewXMLFileWriter.cpp \
   ../src/output/filewriter/CParaviewVTMFileWriter.cpp \
   ../src/output/filewriter/CParaviewFileWriter.cpp \
+  ../src/output/filewriter/CCGNSBFFileWriter.cpp \
   ../src/output/filewriter/CSurfaceFEMDataSorter.cpp \
   ../src/output/filewriter/CSurfaceFVMDataSorter.cpp \
   ../src/output/filewriter/CSU2BinaryFileWriter.cpp \

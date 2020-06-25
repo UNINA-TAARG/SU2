@@ -6538,6 +6538,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     switch (Tab_FileFormat) {
       case TAB_CSV: cout << "The tabular file format is CSV (.csv)." << endl; break;
       case TAB_TECPLOT: cout << "The tabular file format is Tecplot (.dat)." << endl; break;
+      case TAB_CGNS_BF: cout << "The tabular file format is CGNS (.cgns). Usable for BreakForce" << endl; break;
+
     }
 
     cout << "Convergence history file name: " << Conv_FileName << "." << endl;
@@ -6564,6 +6566,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     switch (Tab_FileFormat) {
       case TAB_CSV: cout << "The tabular file format is CSV (.csv)." << endl; break;
       case TAB_TECPLOT: cout << "The tabular file format is Tecplot (.dat)." << endl; break;
+      case TAB_CGNS_BF: cout << "The tabular file format is CGNS (.cgns). Usable for BreakForce" << endl; break;
     }
     cout << "Flow variables file name: " << Volume_FileName << "." << endl;
   }
