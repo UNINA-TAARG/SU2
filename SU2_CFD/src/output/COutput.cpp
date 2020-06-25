@@ -602,9 +602,10 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, unsigned short f
         volumeDataSorter->SortConnectivity(config, geometry, true);
 
         /*--- Write a CGNS file ---*/
-        if (rank == MASTER_NODE) (*fileWritingTable) << "CGNS BF" << fileName + CCGNSBFFileWriter::fileExt;
-
-        fileWriter = new CCGNSBFFileWriter(fileName, volumeDataSorter);
+        if (rank == MASTER_NODE) {
+        	(*fileWritingTable) << "CGNS BF" << fileName + CCGNSBFFileWriter::fileExt;
+            fileWriter = new CCGNSBFFileWriter(fileName, volumeDataSorter);
+        }
 
 //        fileWriter = new CCGNSBFFileWriter(config[iZone], geometry[iZone][iInst], &solver[iZone][iInst], iZone, val_nZone);
         break;
