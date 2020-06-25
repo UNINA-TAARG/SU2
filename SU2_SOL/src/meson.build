@@ -17,6 +17,7 @@ if get_option('enable-normal')
                                         'output/filewriter/CCSVFileWriter.cpp',
                                         'output/filewriter/CSTLFileWriter.cpp',
                                         'output/filewriter/CTecplotFileWriter.cpp',
+                                        'output/filewriter/CCGNSBFFileWriter.cpp',
                                         'output/filewriter/CTecplotBinaryFileWriter.cpp',
                                         'output/filewriter/CParaviewFileWriter.cpp',
                                         'output/filewriter/CParaviewBinaryFileWriter.cpp',
