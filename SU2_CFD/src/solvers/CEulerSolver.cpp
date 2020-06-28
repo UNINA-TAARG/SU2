@@ -5824,7 +5824,7 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
   bool ActDisk_Info;
   su2double MyBCThrust, BCThrust_Init;
   su2double Vector[MAXNDIM] = {0.0};
-  int iRow, nRow, iEl, iVar;
+  int iRow, nRow, iEl;
   su2double rad_v[50]={0.0}, dCt_v[50]={0.0}, dCp_v[50]={0.0}, dCr_v[50]={0.0},
   r_ = 0.0, r[MAXNDIM] = {0.0},
   AD_Center[MAXNDIM] = {0.0}, AD_Axis[MAXNDIM] = {0.0}, AD_Radius = 0.0, AD_J = 0.0;
@@ -5850,12 +5850,7 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
   Ref = config->GetDensity_Ref() * config->GetVelocity_Ref() * config->GetVelocity_Ref() * 1.0 * 1.0;
 
   su2double Dens_FreeStream = config->GetDensity_FreeStream();
-  su2double Gas_Constant  = config->GetGas_ConstantND();
-
-  su2double M_inf = config->GetMach();
-  su2double T_inf = config->GetTemperature_FreeStream();
   su2double *Vel_FreeStream = config->GetVelocity_FreeStream();
-  //su2double Vel_FreeStream = M_inf*sqrt(Gamma*Gas_Constant*T_inf);
 
   /*--- Variable load distribution is in input ---*/
 
@@ -5929,21 +5924,23 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
                        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
                        P = geometry->nodes->GetCoord(iPoint);
 
-                       for (iDim=0;iDim<nDim;iDim++){
-                          r[iDim]=P[iDim]-AD_Center[iDim];
-                       }
                        r_=0.0;
                        for (iDim=0;iDim<nDim;iDim++){
+                          r[iDim]=P[iDim]-AD_Center[iDim];
                           r_ += r[iDim]*r[iDim];
                        }
+
                        r_=sqrt(r_);
                        r_ = r_/AD_Radius;
 
                        for (iEl=0;iEl<nRow;iEl++){
                           if (r_<=rad_v[iEl]){
-                             Fa = (dCt_v[iEl]*(2*Dens_FreeStream*Vel_FreeStream[0]*Vel_FreeStream[0])/(AD_J*AD_J*PI_NUMBER*rad_v[iEl])) / config->GetPressure_Ref();
-                             Ft = (dCp_v[iEl]*(2*Dens_FreeStream*Vel_FreeStream[0]*Vel_FreeStream[0])/((AD_J*PI_NUMBER*rad_v[iEl])*(AD_J*PI_NUMBER*rad_v[iEl]))) / config->GetPressure_Ref();
-                             Fr = (dCr_v[iEl]*(2*Dens_FreeStream*Vel_FreeStream[0]*Vel_FreeStream[0])/(AD_J*AD_J*PI_NUMBER*rad_v[iEl])) / config->GetPressure_Ref();
+                             Fa = (dCt_v[iEl]*(2*Dens_FreeStream*Vel_FreeStream[0]*Vel_FreeStream[0])/
+                                  (AD_J*AD_J*PI_NUMBER*rad_v[iEl])) / config->GetPressure_Ref();
+                             Ft = (dCp_v[iEl]*(2*Dens_FreeStream*Vel_FreeStream[0]*Vel_FreeStream[0])/
+                                  ((AD_J*PI_NUMBER*rad_v[iEl])*(AD_J*PI_NUMBER*rad_v[iEl]))) / config->GetPressure_Ref();
+                             Fr = (dCr_v[iEl]*(2*Dens_FreeStream*Vel_FreeStream[0]*Vel_FreeStream[0])/
+                                  (AD_J*AD_J*PI_NUMBER*rad_v[iEl])) / config->GetPressure_Ref();
 
                              SetActDisk_Fa(iMarker, iVertex, Fa);
                              SetActDisk_Fr(iMarker, iVertex, Fr);
@@ -10900,7 +10897,7 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
   su2double C[3], Prop_Axis[3], R, r[3], r_;
   su2double Fa, Fr, Ft, Fx, Fy, Fz;
   su2double u_in, v_in, w_in, u_out, v_out, w_out, uJ, vJ, wJ;
-  su2double Temp_in, Temp_out, Temperature_out, H_in, H_out;
+  su2double Temperature_out, H_in, H_out;
   su2double FQ, Q_out, Density_Disk;
   su2double SoSextr, Vnextr[3], Vnextr_, RiemannExtr, QdMnorm[3], QdMnorm2, appo2, SoS_out;
   const su2double *P = nullptr;
@@ -10921,7 +10918,7 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
 
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
   if(Kind_ActDisk == VARIABLE_LOAD){
-    for (iDim=0;iDim<nDim;iDim++){
+    for (iDim = 0; iDim < nDim; iDim++){
       C[iDim] = GetActDisk_C(val_marker, iDim);
       Prop_Axis[iDim] = GetActDisk_Axis(val_marker, iDim);
     }
@@ -10961,57 +10958,17 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
         Ft = GetActDisk_Ft(val_marker, iVertex);
 
         P = geometry->nodes->GetCoord(iPoint);
+
+        r_=0.0;
         for (iDim=0;iDim<nDim;iDim++){
           r[iDim] = P[iDim]-C[iDim];
+          r_ += r[iDim]*r[iDim];
         }
-        r_=0.0;
-        for (iDim = 0; iDim < nDim; iDim ++) r_ += r[iDim]*r[iDim];
         r_=sqrt(r_);
 
-        if ((r[1]>0.0) && (r[2]>0.0)){
-          Fx = (Ft+Fr)*(r[0]/r_);
-          Fy = (Ft+Fr)*(r[2]/r_);
-          Fz = -(Ft+Fr)*(r[1]/r_);
-        }
-
-        if ((r[1]>0.0) && (r[2]<0.0)){
-          Fx = (Ft+Fr)*(r[0]/r_);
-          Fy = (Ft+Fr)*(r[2]/r_);
-          Fz = -(Ft+Fr)*(r[1]/r_);
-        }
-
-        if ((r[1]<0.0) && (r[2]<0.0)){
-          Fx = (Ft+Fr)*(r[0]/r_);
-          Fy = (Ft+Fr)*(r[2]/r_);
-          Fz = -(Ft+Fr)*(r[1]/r_);
-        }
-
-        if ((r[1]<0.0) && (r[2]>0.0)){
-          Fx = (Ft+Fr)*(r[0]/r_);
-          Fy = (Ft+Fr)*(r[2]/r_);
-          Fz = -(Ft+Fr)*(r[1]/r_);
-        }
-
-        if ((r[1]>0) && (r[2]=0)){
-          Fx = (Ft+Fr)*(r[0]/r_);
-          Fy = 0.0;
-          Fz = -(Ft+Fr)*(r[1]/r_);
-        }
-        if ((r[1]=0) && (r[2]<0)){
-          Fx = (Ft+Fr)*(r[0]/r_);
-          Fy = (Ft+Fr)*(r[2]/r_);
-          Fz = 0.0;
-        }
-        if ((r[1]<0) && (r[2]=0)){
-          Fx = (Ft+Fr)*(r[0]/r_);
-          Fy = 0.0;
-          Fz = -(Ft+Fr)*(r[1]/r_);
-        }
-        if ((r[1]=0) && (r[2]>0)){
-          Fx = (Ft+Fr)*(r[0]/r_);
-          Fy = (Ft+Fr)*(r[2]/r_);
-          Fz = 0.0;
-        }
+        Fx = (Ft+Fr)*(r[0]/r_);
+        Fy = (Ft+Fr)*(r[2]/r_);
+        Fz = -(Ft+Fr)*(r[1]/r_);
 
         if (val_inlet_surface){
           V_inlet = nodes->GetPrimitive(iPoint);
@@ -11025,7 +10982,6 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
         u_out = V_outlet[1]*V_outlet[nDim+2];
         v_out = V_outlet[2]*V_outlet[nDim+2];
         w_out = V_outlet[3]*V_outlet[nDim+2];
-        Temp_out = V_outlet[0];
 
         Pressure_in    = V_inlet[nDim+1];
         Density_in     = V_inlet[nDim+2];
@@ -11033,7 +10989,6 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
         v_in = V_inlet[2]*Density_in;
         w_in = V_inlet[3]*Density_in;
         H_in = V_inlet[nDim+3]*Density_in;
-        Temp_in = V_inlet[0];
 
         Density_Disk = 0.5*(Density_in + Density_out);
 
