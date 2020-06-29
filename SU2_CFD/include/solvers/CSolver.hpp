@@ -3123,37 +3123,55 @@ public:
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the radial force per unit area.
+   * \return Value of the x component of the radial and tangential forces per unit area resultant.
    */
-  inline virtual su2double GetActDisk_Fr(unsigned short val_marker, unsigned long val_vertex) const { return 0; }
+  inline virtual su2double GetActDisk_Fx(unsigned short val_marker, unsigned long val_vertex) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the radial force per unit area.
+   * \return Value of the x component of the radial and tangential forces per unit area resultant.
    */
-  inline virtual void SetActDisk_Fr(unsigned short val_marker,
+  inline virtual void SetActDisk_Fx(unsigned short val_marker,
                                     unsigned long val_vertex,
-                                    su2double val_fr) { }
+                                    su2double val_fx) { }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the tangential force per unit area.
+   * \return Value of the y component of the radial and tangential forces per unit area resultant.
    */
-  inline virtual su2double GetActDisk_Ft(unsigned short val_marker, unsigned long val_vertex) const { return 0; }
+  inline virtual su2double GetActDisk_Fy(unsigned short val_marker, unsigned long val_vertex) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-   * \return Value of the tangential force per unit area.
+   * \return Value of the y component of the radial and tangential forces per unit area resultant.
    */
-  inline virtual void SetActDisk_Ft(unsigned short val_marker,
+  inline virtual void SetActDisk_Fy(unsigned short val_marker,
                                     unsigned long val_vertex,
-                                    su2double val_ft) { }
+                                    su2double val_fy) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the z component of the radial and tangential forces per unit area resultant.
+   */
+  inline virtual su2double GetActDisk_Fz(unsigned short val_marker, unsigned long val_vertex) const { return 0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the z component of the radial and tangential forces per unit area resultant.
+   */
+  inline virtual void SetActDisk_Fz(unsigned short val_marker,
+                                    unsigned long val_vertex,
+                                    su2double val_fz) { }
 
   /*!
    * \brief A virtual member.

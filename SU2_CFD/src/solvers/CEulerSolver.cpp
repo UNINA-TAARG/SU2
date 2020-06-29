@@ -337,13 +337,17 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
   Alloc2D(nMarker, nVertex, ActDisk_Fa);
 
-  /*--- Store the value of the Radial Force per Unit Area at the Actuator Disk ---*/
+  /*--- Store the value of the X component of the Radial and Tangential Forces per Unit Area Resultant ---*/
 
-  Alloc2D(nMarker, nVertex, ActDisk_Fr);
+  Alloc2D(nMarker, nVertex, ActDisk_Fx);
 
-  /*--- Store the value of the Tangential Force per Unit Area at the Actuator Disk ---*/
+  /*--- Store the value of the Y component of the Radial and Tangential Forces per Unit Area Resultant ---*/
 
-  Alloc2D(nMarker, nVertex, ActDisk_Ft);
+  Alloc2D(nMarker, nVertex, ActDisk_Fy);
+
+  /*--- Store the value of the Z component of the Radial and Tangential Forces per Unit Area Resultant ---*/
+
+  Alloc2D(nMarker, nVertex, ActDisk_Fz);
 
   /*--- Store the value of the Delta P at the Actuator Disk ---*/
 
@@ -686,16 +690,22 @@ CEulerSolver::~CEulerSolver(void) {
     delete [] ActDisk_Fa;
   }
 
-  if (ActDisk_Fr != nullptr) {
+  if (ActDisk_Fx != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
-      delete [] ActDisk_Fr[iMarker];
-    delete [] ActDisk_Fr;
+      delete [] ActDisk_Fx[iMarker];
+    delete [] ActDisk_Fx;
   }
 
-  if (ActDisk_Ft != nullptr) {
+  if (ActDisk_Fy != nullptr) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
-      delete [] ActDisk_Ft[iMarker];
-    delete [] ActDisk_Ft;
+      delete [] ActDisk_Fy[iMarker];
+    delete [] ActDisk_Fy;
+  }
+
+  if (ActDisk_Fz != nullptr) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      delete [] ActDisk_Fz[iMarker];
+    delete [] ActDisk_Fz;
   }
 
   if (ActDisk_DeltaP != nullptr) {
@@ -5828,7 +5838,7 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
   su2double rad_v[50]={0.0}, dCt_v[50]={0.0}, dCp_v[50]={0.0}, dCr_v[50]={0.0},
   r_ = 0.0, r[MAXNDIM] = {0.0},
   AD_Center[MAXNDIM] = {0.0}, AD_Axis[MAXNDIM] = {0.0}, AD_Radius = 0.0, AD_J = 0.0;
-  su2double Fa, Ft, Fr;
+  su2double Fa[50]={0.0}, Ft[50]={0.0}, Fr[50]={0.0}, Fx = 0.0, Fy = 0.0, Fz = 0.0;
   const su2double *P = nullptr;
 
   su2double dNetThrust_dBCThrust        = config->GetdNetThrust_dBCThrust();
@@ -5855,12 +5865,13 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
   /*--- Variable load distribution is in input ---*/
 
   if (Kind_ActDisk == VARIABLE_LOAD) {
+
+     string ActDisk_filename = config->GetActDisk_FileName();
      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
         if ((config->GetMarker_All_KindBC(iMarker) == ACTDISK_INLET) ||
            (config->GetMarker_All_KindBC(iMarker) == ACTDISK_OUTLET)) {
 
            Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-           string ActDisk_filename = config->GetActDisk_FileName();
            ifstream ActDisk_file;
            ActDisk_file.open(ActDisk_filename.data(), ios::in);
 
@@ -5920,6 +5931,30 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
                        SetActDisk_Axis(iMarker, iDim, AD_Axis[iDim]);
                     }
 
+                    if (rad_v[0] == 0.0){
+                    	Fa[0] = (((2*Dens_FreeStream*Vel_FreeStream[0]*Vel_FreeStream[0])/
+                                (AD_J*AD_J*PI_NUMBER))*((dCt_v[1] - dCt_v[0])/rad_v[1])) / config->GetPressure_Ref();
+                    	Ft[0] = 0.0;
+                    	Fr[0] = 0.0;
+                    }
+                    else{
+                      Fa[0] = (dCt_v[0]*(2*Dens_FreeStream*Vel_FreeStream[0]*Vel_FreeStream[0])/
+                                (AD_J*AD_J*PI_NUMBER*rad_v[0])) / config->GetPressure_Ref();
+                      Ft[0] = (dCp_v[0]*(2*Dens_FreeStream*Vel_FreeStream[0]*Vel_FreeStream[0])/
+                                ((AD_J*PI_NUMBER*rad_v[0])*(AD_J*PI_NUMBER*rad_v[0]))) / config->GetPressure_Ref();
+                      Fr[0] = (dCr_v[0]*(2*Dens_FreeStream*Vel_FreeStream[0]*Vel_FreeStream[0])/
+                                (AD_J*AD_J*PI_NUMBER*rad_v[0])) / config->GetPressure_Ref();
+                    }
+
+                    for (iEl = 1; iEl < nRow; iEl++){
+                      Fa[iEl] = (dCt_v[iEl]*(2*Dens_FreeStream*Vel_FreeStream[0]*Vel_FreeStream[0])/
+                           (AD_J*AD_J*PI_NUMBER*rad_v[iEl])) / config->GetPressure_Ref();
+                      Ft[iEl] = (dCp_v[iEl]*(2*Dens_FreeStream*Vel_FreeStream[0]*Vel_FreeStream[0])/
+                           ((AD_J*PI_NUMBER*rad_v[iEl])*(AD_J*PI_NUMBER*rad_v[iEl]))) / config->GetPressure_Ref();
+                      Fr[iEl] = (dCr_v[iEl]*(2*Dens_FreeStream*Vel_FreeStream[0]*Vel_FreeStream[0])/
+                           (AD_J*AD_J*PI_NUMBER*rad_v[iEl])) / config->GetPressure_Ref();
+                    }
+
                     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
                        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
                        P = geometry->nodes->GetCoord(iPoint);
@@ -5935,18 +5970,22 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
 
                        for (iEl=0;iEl<nRow;iEl++){
                           if (r_<=rad_v[iEl]){
-                             Fa = (dCt_v[iEl]*(2*Dens_FreeStream*Vel_FreeStream[0]*Vel_FreeStream[0])/
-                                  (AD_J*AD_J*PI_NUMBER*rad_v[iEl])) / config->GetPressure_Ref();
-                             Ft = (dCp_v[iEl]*(2*Dens_FreeStream*Vel_FreeStream[0]*Vel_FreeStream[0])/
-                                  ((AD_J*PI_NUMBER*rad_v[iEl])*(AD_J*PI_NUMBER*rad_v[iEl]))) / config->GetPressure_Ref();
-                             Fr = (dCr_v[iEl]*(2*Dens_FreeStream*Vel_FreeStream[0]*Vel_FreeStream[0])/
-                                  (AD_J*AD_J*PI_NUMBER*rad_v[iEl])) / config->GetPressure_Ref();
+                            if(r_ == 0.0){
+                              Fx = 0.0;
+                              Fy = 0.0;
+                              Fz = 0.0;
+                            }
+                            else{
+                        	Fx = (Ft[iEl]+Fr[iEl])*(r[0]/(r_*AD_Radius));
+                        	Fy = (Ft[iEl]+Fr[iEl])*(r[2]/(r_*AD_Radius));
+                        	Fz = -(Ft[iEl]+Fr[iEl])*(r[1]/(r_*AD_Radius));
+                            }
+                            SetActDisk_Fa(iMarker, iVertex, Fa[iEl]);
+                            SetActDisk_Fx(iMarker, iVertex, Fx);
+                            SetActDisk_Fy(iMarker, iVertex, Fy);
+                            SetActDisk_Fz(iMarker, iVertex, Fz);
 
-                             SetActDisk_Fa(iMarker, iVertex, Fa);
-                             SetActDisk_Fr(iMarker, iVertex, Fr);
-                             SetActDisk_Ft(iMarker, iVertex, Ft);
-
-                             break;
+                            break;
                           }
                        }
                     }
@@ -10953,10 +10992,13 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
         /*--- Current solution at this boundary node and jumps values ---*/
 
         V_domain = nodes->GetPrimitive(iPoint);
-        Fa = GetActDisk_Fa(val_marker, iVertex);
-        Fr = GetActDisk_Fr(val_marker, iVertex);
-        Ft = GetActDisk_Ft(val_marker, iVertex);
 
+        Fa = GetActDisk_Fa(val_marker, iVertex);
+        Fx = GetActDisk_Fx(val_marker, iVertex);
+        Fy = GetActDisk_Fy(val_marker, iVertex);
+        Fz = GetActDisk_Fz(val_marker, iVertex);
+
+/*
         P = geometry->nodes->GetCoord(iPoint);
 
         r_=0.0;
@@ -10970,6 +11012,51 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
         Fy = (Ft+Fr)*(r[2]/r_);
         Fz = -(Ft+Fr)*(r[1]/r_);
 
+        if ((r[1]>0.0) && (r[2]>0.0)){
+          Fx = (Ft+Fr)*(r[0]/r_);
+          Fy = (Ft+Fr)*(r[2]/r_);
+          Fz = -(Ft+Fr)*(r[1]/r_);
+        }
+
+        if ((r[1]>0.0) && (r[2]<0.0)){
+          Fx = (Ft+Fr)*(r[0]/r_);
+          Fy = (Ft+Fr)*(r[2]/r_);
+          Fz = -(Ft+Fr)*(r[1]/r_);
+        }
+
+        if ((r[1]<0.0) && (r[2]<0.0)){
+          Fx = (Ft+Fr)*(r[0]/r_);
+          Fy = (Ft+Fr)*(r[2]/r_);
+          Fz = -(Ft+Fr)*(r[1]/r_);
+        }
+
+        if ((r[1]<0.0) && (r[2]>0.0)){
+          Fx = (Ft+Fr)*(r[0]/r_);
+          Fy = (Ft+Fr)*(r[2]/r_);
+          Fz = -(Ft+Fr)*(r[1]/r_);
+        }
+
+        if ((r[1]>0) && (r[2]=0)){
+          Fx = (Ft+Fr)*(r[0]/r_);
+          Fy = 0.0;
+          Fz = -(Ft+Fr)*(r[1]/r_);
+        }
+        if ((r[1]=0) && (r[2]<0)){
+          Fx = (Ft+Fr)*(r[0]/r_);
+          Fy = (Ft+Fr)*(r[2]/r_);
+          Fz = 0.0;
+        }
+        if ((r[1]<0) && (r[2]=0)){
+          Fx = (Ft+Fr)*(r[0]/r_);
+          Fy = 0.0;
+          Fz = -(Ft+Fr)*(r[1]/r_);
+        }
+        if ((r[1]=0) && (r[2]>0)){
+          Fx = (Ft+Fr)*(r[0]/r_);
+          Fy = (Ft+Fr)*(r[2]/r_);
+          Fz = 0.0;
+        }
+*/
         if (val_inlet_surface){
           V_inlet = nodes->GetPrimitive(iPoint);
           V_outlet = GetDonorPrimVar(val_marker, iVertex);}
